@@ -31,7 +31,7 @@ The tool operates using a broker and agent model over a named pipe, allowing sea
 ```
 TokenRider/
 ├── Go/
-│   ├── systemproxy.go
+│   ├── TokenRider.go
 │   ├── go.mod
 │   └── go.sum
 ├── PowerShell/
@@ -103,14 +103,14 @@ TokenRider.exe -t DOMAIN\\User
 
 ```
 cd Go
-go build -o TokenRider.exe systemproxy.go
+go build -o TokenRider.exe TokenRider.go
 ```
 
 ### Cross compile from Linux
 
 ```
 cd Go
-GOOS=windows GOARCH=amd64 go build -o TokenRider.exe systemproxy.go
+GOOS=windows GOARCH=amd64 go build -o TokenRider.exe TokenRider.go
 ```
 
 Adjust `GOARCH` as needed for your target architecture.
