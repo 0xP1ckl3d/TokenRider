@@ -8,7 +8,7 @@ Steal a token. Become the user. Own the shell.
 
 TokenRider is a Windows post exploitation utility designed to steal and impersonate existing process tokens in order to spawn fully interactive shells under alternate security contexts, including **NT AUTHORITY\SYSTEM** and other logged on users.
 
-Unlike traditional token impersonation tooling, TokenRider provides a fully interactive PowerShell experience by leveraging ConPTY. This enables proper terminal behaviour including tab completion, PSReadLine support, colours, and responsive input and output, all controlled directly from the originating shell.
+Unlike traditional token impersonation tooling, the Go implementation provides a fully interactive PowerShell experience by leveraging ConPTY. This enables proper terminal behaviour including tab completion, PSReadLine support, colours, and responsive input and output, all controlled directly from the originating shell.
 
 The tool operates using a broker and agent model over a named pipe, allowing seamless command execution and interactive session control.
 
@@ -17,7 +17,7 @@ The tool operates using a broker and agent model over a named pipe, allowing sea
 ## Features
 
 * Token theft and impersonation for SYSTEM and user contexts
-* Interactive ConPTY backed PowerShell shells
+* Interactive ConPTY backed PowerShell shells in the Go implementation
 * Single command execution mode
 * Token enumeration with usability validation
 * Safe handling of non spawnable and protected tokens
@@ -28,19 +28,20 @@ The tool operates using a broker and agent model over a named pipe, allowing sea
 
 ## Project Structure
 
-```
+```text
 TokenRider/
 ├── Go/
 │   ├── TokenRider.go
 │   ├── go.mod
 │   └── go.sum
 ├── PowerShell/
-│   └── TokenRider.ps1
+│   ├── TokenRider.ps1
+│   └── getsystem.ps1
 └── README.md
 ```
 
 * Go directory contains the Go source code and module files
-* PowerShell directory contains the script based version
+* PowerShell directory contains both PowerShell implementations
 
 ---
 
@@ -48,31 +49,25 @@ TokenRider/
 
 ### Interactive SYSTEM shell
 
-```
+```powershell
 TokenRider.exe
 ```
 
----
-
 ### Run a single command as SYSTEM
 
-```
+```powershell
 TokenRider.exe -c "whoami"
 ```
 
----
-
 ### List available user tokens
 
-```
+```powershell
 TokenRider.exe -t ?
 ```
 
----
-
 ### Impersonate a specific user
 
-```
+```powershell
 TokenRider.exe -t DOMAIN\\User
 ```
 
@@ -80,13 +75,13 @@ TokenRider.exe -t DOMAIN\\User
 
 ## How It Works
 
-1. Enumerates running processes and extracts accessible tokens
-2. Filters tokens based on duplication and process spawn capability
-3. Duplicates a usable token into a primary token
-4. Spawns a new process under the impersonated context
-5. Establishes a named pipe between broker and agent
-6. Creates a ConPTY backed shell for interactive sessions
-7. Bridges input and output between the local terminal and the remote shell
+1. Enumerates running processes and extracts accessible tokens.
+2. Filters tokens based on duplication and process spawn capability.
+3. Duplicates a usable token into a primary token.
+4. Spawns a new process under the impersonated context.
+5. Establishes a named pipe between broker and agent.
+6. Creates a ConPTY backed shell for interactive sessions.
+7. Bridges input and output between the local terminal and the remote shell.
 
 ---
 
@@ -94,53 +89,61 @@ TokenRider.exe -t DOMAIN\\User
 
 ### Requirements
 
-* Windows
 * Go 1.20 or newer
-
----
+* A Windows target
 
 ### Build on Windows
 
-```
+```powershell
 cd Go
 go build -o TokenRider.exe TokenRider.go
 ```
 
 ### Cross compile from Linux
 
-```
+```bash
 cd Go
 GOOS=windows GOARCH=amd64 go build -o TokenRider.exe TokenRider.go
 ```
 
 Adjust `GOARCH` as needed for your target architecture.
 
----
-
 ### Notes
 
 * Must be compiled for Windows due to platform specific APIs
-* Requires appropriate privileges such as SeDebugPrivilege
+* Cross compilation from Linux is supported as long as the target is Windows
+* Requires appropriate privileges such as SeDebugPrivilege at runtime
 
 ---
 
-## PowerShell Version
+## PowerShell Versions
 
-A PowerShell implementation is also provided:
+Two PowerShell implementations are provided.
 
-```
+```text
 PowerShell/TokenRider.ps1
+PowerShell/getsystem.ps1
 ```
 
-The PowerShell version currently behaves differently to the Go implementation.
+### TokenRider.ps1
 
-Current state:
+This is the proxy based PowerShell implementation.
 
-* Only implemented for SYSTEM token theft
+* Currently only implemented for SYSTEM token theft
 * Does not use ConPTY
-* Still proxies shell input and output through the existing session
+* Proxies shell input and output through the existing session
 * Provides a less interactive experience than the Go version
-* Is a work in progress and is intended to be brought closer in line with the enhanced Go implementation over time
+* Is a work in progress toward feature parity with the Go implementation
+
+### getsystem.ps1
+
+This is the simpler PowerShell implementation.
+
+* Opens a SYSTEM level command prompt in a new window
+* Does not use proxying or pipe based communication
+* Intended for cases where same shell execution is not required
+* Useful when you have physical access to a system or otherwise do not need in shell interaction
+* Provides much more basic functionality than the Go version and the proxy based PowerShell version
 
 ---
 
@@ -160,11 +163,11 @@ Current state:
 
 * Protected process tokens may be visible but are filtered out if not usable
 
-### PowerShell version
+### PowerShell versions
 
-* Currently limited to SYSTEM token theft
-* Does not provide ConPTY backed interactivity
-* Interactive behaviour is more limited than the Go version
+* `TokenRider.ps1` is currently limited to SYSTEM token theft
+* `TokenRider.ps1` does not provide ConPTY backed interactivity
+* `getsystem.ps1` does not execute within the existing shell
 * Feature parity with the Go version is still in progress
 
 ---
